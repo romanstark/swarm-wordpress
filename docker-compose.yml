@@ -120,7 +120,7 @@ volumes:
   www:
     driver: local-persist
     driver_opts:
-      mountpoint: $(SITE_STORAGE_BASE_PATH)${DIR}${SUBDIR}
+      mountpoint: ${SITE_STORAGE_BASE_PATH}${DIR}${SUBDIR}
   data:
     driver: local-persist
     driver_opts:
