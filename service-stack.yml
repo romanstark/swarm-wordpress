@@ -1,0 +1,134 @@
+# Wordpress Docker SWARM Stack with persistant storage e.g. glusterfs
+# Docker local-persist fs plugin needs to be installed on all nodes
+# Traefik 2 is used as proxy solution and need to work properly with le
+#
+# Make sure to have the overlay traefik network "traefik-public" or change as needed
+# Make sure to create mariadb docker secrets "$(DIR)_wp_db_upw" (user password)
+# and "wp_db_rpw" (root password) or change as needed
+#
+# Export the needed env vars like this:
+#
+# export SITE_STORAGE_BASE_PATH="/glusterfs/storage/sites/"
+# export SITE_DATABASE_BASE_PATH="/glusterfs/database/sites/"
+#
+# export DOMAIN="example.com" (Subdomain also works like this sub.example.com)
+# export DIR="example_com" (sub_example_com) this is the directory below the SITE_* vars as well as the traefik namespace
+# export SUBDIR="/wp" (use SUBDIR="" if the data should be stored in the DIR directory directly)
+
+version: "3.8"
+
+x-default-opts: &default-opts
+  logging:
+    options:
+      max-size: '1m'
+  # driver: "gelf"
+  # options:
+  #   gelf-address: "udp://127.0.0.1:5000"
+
+services:
+
+  db:
+    <<: *default-opts
+    image: mariadb:10.5.4
+    volumes:
+      - data:/var/lib/mysql
+    secrets:
+      - wp_db_upw
+      - wp_db_rpw
+    environment:
+      - MYSQL_USER=wp
+      - MYSQL_DATABASE=wp
+      - MYSQL_PASSWORD_FILE=/run/secrets/wp_db_upw
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/wp_db_rpw
+    networks:
+      - db
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+
+  wordpress:
+    <<: *default-opts
+    image: wordpress:latest
+    depends_on:
+      - db
+    volumes:
+      - www:/var/www/html
+    secrets:
+      - wp_db_upw
+    environment:
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_NAME: wp
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/wp_db_upw
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_CONFIG_EXTRA: |
+        /* Site URL */
+        define('FORCE_SSL_ADMIN', true);
+        define('WP_HOME', 'https://${DOMAIN}');
+        define('WP_SITEURL', 'https://${DOMAIN}');
+        /* Developer friendly settings */
+        # define('SCRIPT_DEBUG', true);
+        # define('CONCATENATE_SCRIPTS', false);
+        # define('WP_DEBUG', true);
+        # define('WP_DEBUG_LOG', true);
+        # define('SAVEQUERIES', true);
+        /* Multisite */
+        # define('WP_ALLOW_MULTISITE', true );
+        # define('MULTISITE', true);
+        # define('SUBDOMAIN_INSTALL', false);
+        # define('DOMAIN_CURRENT_SITE', 'https://${DOMAIN}');
+        # define('PATH_CURRENT_SITE', '/');
+        # define('SITE_ID_CURRENT_SITE', 1);
+        # define('BLOG_ID_CURRENT_SITE', 1);
+    networks:
+      - traefik-public
+      - db
+    deploy:
+      replicas: 1
+      placement:
+        max_replicas_per_node: 1
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.http.services.${DIR}.loadbalancer.server.port=80
+        - traefik.http.routers.${DIR}.rule=Host(`${DOMAIN}`,`www.${DOMAIN}`)
+        - traefik.http.routers.${DIR}.entrypoints=https
+        - traefik.http.routers.${DIR}.tls.certresolver=le
+
+secrets:
+  wp_db_upw:
+    name: ${DIR}_wp_dp_upw
+    external: true
+  wp_db_rpw:
+    # name: ${DIR}_wp_dp_rpw
+    external: true
+
+volumes:
+  www:
+    driver: local-persist
+    driver_opts:
+      mountpoint: $(SITE_STORAGE_BASE_PATH)${DIR}${SUBDIR}
+  data:
+    driver: local-persist
+    driver_opts:
+      mountpoint: ${SITE_DATABASE_BASE_PATH}${DIR}${SUBDIR}
+
+networks:
+  db:
+  traefik-public:
+    external: true
