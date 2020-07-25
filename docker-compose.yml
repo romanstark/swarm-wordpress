@@ -110,10 +110,10 @@ services:
 
 secrets:
   wp_db_upw:
-    name: ${DIR}_wp_dp_upw
+    name: ${DIR}_wp_db_upw
     external: true
   wp_db_rpw:
-    # name: ${DIR}_wp_dp_rpw
+    # name: ${DIR}_wp_db_rpw
     external: true
 
 volumes:
