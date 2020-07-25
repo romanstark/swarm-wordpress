@@ -15,7 +15,7 @@
 # export DIR="example_com" (sub_example_com) this is the directory below the SITE_* vars as well as the traefik namespace
 # export SUBDIR="/wp" (use SUBDIR="" if the data should be stored in the DIR directory directly)
 
-version: "3.8"
+version: "3.7"
 
 x-default-opts: &default-opts
   logging:
@@ -89,8 +89,6 @@ services:
       - db
     deploy:
       replicas: 1
-      placement:
-        max_replicas_per_node: 1
       resources:
         limits:
           cpus: '0.50'
