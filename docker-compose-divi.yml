@@ -58,8 +58,6 @@ services:
   wp:
     <<: *default-opts
     image: romanstark/divi:latest
-    depends_on:
-      - db
     volumes:
       - www:/var/www/html
     networks:
