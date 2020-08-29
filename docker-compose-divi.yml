@@ -3,7 +3,7 @@
 # Docker local-persist fs plugin needs to be installed on all nodes
 # Traefik 2 is used as proxy solution and need to work properly with le
 #
-# Make sure to have the overlay traefik network "traefik-public" or change as needed
+# Make sure to have the overlay traefik network "proxy" or change as needed
 # Make sure to create mariadb docker secrets "$(DIR)_wp_db_upw" (user password)
 # and "wp_db_rpw" (root password) or change as needed
 #
@@ -46,9 +46,12 @@ services:
     deploy:
       replicas: 1
       resources:
-        limits:
+        reservations:
           cpus: '0.25'
-          memory: 256M
+          memory: 128M
+      update_config:
+        parallelism: 1
+        delay: 10s
       restart_policy:
         condition: on-failure
 
@@ -60,19 +63,18 @@ services:
     volumes:
       - www:/var/www/html
     networks:
-      - traefik-public
+      - proxy
       - db
     deploy:
       replicas: 1
+      placement:
+        max_replicas_per_node: 1
       resources:
-        limits:
-          cpus: '0.50'
-          memory: 512M
         reservations:
           cpus: '0.25'
           memory: 256M
       update_config:
-        parallelism: 2
+        parallelism: 1
         delay: 10s
       restart_policy:
         condition: on-failure
@@ -103,5 +105,5 @@ volumes:
 
 networks:
   db:
-  traefik-public:
+  proxy:
     external: true
