@@ -57,7 +57,7 @@ services:
 
   wp:
     <<: *default-opts
-    image: romanstark/divi:latest
+    image: registry.gitlab.com/vanedler/docker-wordpress-divi:latest
     volumes:
       - www:/var/www/html
     networks:
