@@ -52,7 +52,7 @@ services:
 
   wp:
     <<: *default-opts
-    image: registry.gitlab.com/vanedler/docker-wordpress-divi:latest
+    image: registry.gitlab.com/vanedler/docker-wordpress-duplicator:latest
     volumes:
       - www:/var/www/html
     networks:

@@ -1,7 +1,3 @@
-# Wordpress Docker SWARM Stack with persistant storage e.g. glusterfs
-# Docker local-persist fs plugin needs to be installed on all nodes
-# Traefik 2 is used as proxy solution and need to work properly with le
-#
 # Make sure to have the overlay traefik network "proxy" or change as needed
 # Make sure to create mariadb docker secrets "$(DIR)_wp_db_upw" (user password)
 # and "wp_db_rpw" (root password) or change as needed
